@@ -1,7 +1,14 @@
 package vineria.modelo;
 
+/*
+ * Bodega - MODELO (MVC).
+ * Representa una bodega productora de vinos (nombre, región y país).
+ * Cada Vino guarda el id de su Bodega (relación uno a muchos: una bodega
+ * tiene muchos vinos).
+ */
 public class Bodega {
 
+    // ENCAPSULAMIENTO: atributos privados, solo accesibles con getters/setters.
     private int id;
     private String nombre;
     private String region;
@@ -22,6 +29,7 @@ public class Bodega {
         this.pais = pais;
     }
 
+    // ENCAPSULAMIENTO: getters y setters públicos.
     public int getId() { return id; }
     public void setId(int id) { this.id = id; }
 
@@ -35,6 +43,8 @@ public class Bodega {
     public void setPais(String pais) { this.pais = pais; }
 
     // Cómo se muestra la bodega como texto (por ejemplo en un combo)
+    // POLIMORFISMO: sobrescribe toString() heredado de Object. El JComboBox
+    // lo llama automáticamente para mostrar cada bodega.
     @Override
     public String toString() {
         return nombre + " (" + region + ", " + pais + ")";

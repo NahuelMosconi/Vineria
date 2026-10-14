@@ -5,18 +5,33 @@ import java.sql.DriverManager;
 import java.sql.SQLException;
 import java.sql.Statement;
 
+/*
+ * ConexionBD - ACCESO A DATOS (capa DAO).
+ * Centraliza la conexión a la base SQLite y la creación inicial de tablas.
+ *
+ * DAO: los demás DAO (BodegaDAO, VinoDAO, UsuarioDAO) piden su conexión acá,
+ * así la dirección de la base está escrita en un solo lugar.
+ * ABSTRACCION: el resto del programa no necesita saber cómo se conecta a
+ * SQLite; solo llama a ConexionBD.conectar().
+ *
+ * Sus métodos son "static": se usan sin crear un objeto (ConexionBD.conectar()).
+ */
 public class ConexionBD {
 
     // Dirección de la base: un archivo "vineria.db" en la carpeta del proyecto.
+    // ENCAPSULAMIENTO: es private, nadie de afuera puede leerla ni cambiarla.
     private static final String URL = "jdbc:sqlite:vineria.db";
 
     // Abre la conexión. Si el archivo no existe, SQLite lo crea solo.
+    // Quien la usa debe cerrarla (los DAO lo hacen con try-with-resources).
     public static Connection conectar() throws SQLException {
         return DriverManager.getConnection(URL);
     }
 
     // Crea las tablas y carga los datos iniciales si no existen.
+    // Se llama una sola vez, desde main, al arrancar el programa.
     public static void inicializar() {
+        // Tabla de bodegas. "AUTOINCREMENT": la base asigna el id sola.
         String sqlBodegas =
             "CREATE TABLE IF NOT EXISTS bodegas (" +
             "  id     INTEGER PRIMARY KEY AUTOINCREMENT," +
@@ -25,6 +40,9 @@ public class ConexionBD {
             "  pais   TEXT NOT NULL" +
             ")";
 
+        // Tabla de vinos. La columna "tipo" guarda TINTO/BLANCO/ESPUMANTE
+        // para saber qué subclase de Vino crear al leerla.
+        // FOREIGN KEY: cada vino apunta a una bodega existente.
         String sqlVinos =
             "CREATE TABLE IF NOT EXISTS vinos (" +
             "  id        INTEGER PRIMARY KEY AUTOINCREMENT," +
@@ -38,6 +56,7 @@ public class ConexionBD {
             "  FOREIGN KEY (id_bodega) REFERENCES bodegas(id)" +
             ")";
 
+        // Tabla de usuarios para el login. UNIQUE: no se repiten nombres.
         String sqlUsuarios =
             "CREATE TABLE IF NOT EXISTS usuarios (" +
             "  id          INTEGER PRIMARY KEY AUTOINCREMENT," +
@@ -45,11 +64,16 @@ public class ConexionBD {
             "  contrasenia TEXT NOT NULL" +
             ")";
 
+        // try-with-resources: la conexión y el Statement se cierran solos
+        // al terminar el bloque, aunque ocurra un error.
         try (Connection con = conectar();
              Statement st = con.createStatement()) {
             st.execute(sqlBodegas);
             st.execute(sqlVinos);
             st.execute(sqlUsuarios);
+
+            // "INSERT OR IGNORE": si el registro ya existe, no lo duplica.
+            // Así se puede ejecutar en cada arranque sin problemas.
 
             // Usuario para el login
             st.execute("INSERT OR IGNORE INTO usuarios (usuario, contrasenia) VALUES ('admin', 'admin')");
